@@ -8,11 +8,27 @@ import java.util.*;
 
 public class App {
 
-    static void cleanup(Object object, Set<String> fieldsToCleanup, Set<String> fieldsToOutput) throws IllegalAccessException, NoSuchMethodException, InvocationTargetException {
+    private static void cleanup(Object object, Set<String> fieldsToCleanup, Set<String> fieldsToOutput) throws IllegalAccessException, NoSuchMethodException, InvocationTargetException {
         if (!isMap(object)) {
             final String[] LIST_PRIMITVES = new String[]{"byte", "short", "int", "long", "float", "double", "boolean", "char"};
             Class clazz = object.getClass();
             Field[] fields = clazz.getDeclaredFields();
+            Set<String> nameFields=new HashSet<>();
+            for (Field field : fields) {
+                nameFields.add(field.getName());
+            }
+
+            for (String s : fieldsToCleanup) {
+                if (!nameFields.contains(s)) {
+                    throw new IllegalArgumentException();
+                }
+            }
+            for (String s : fieldsToOutput) {
+                if (!nameFields.contains(s)) {
+                    throw new IllegalArgumentException();
+                }
+            }
+
 
             for (Field field : fields) {
                 for (String s : fieldsToCleanup) {
@@ -53,7 +69,7 @@ public class App {
 
             }
             StringBuilder stringBuilder = new StringBuilder();
-            Boolean isPrimitive = false;
+            boolean isPrimitive = false;
 
             for (Field field : fields) {
                 for (String s : fieldsToOutput) {
@@ -76,21 +92,35 @@ public class App {
             Class<?> aClass = object.getClass();
             Class[] paramTypes = new Class[]{Object.class};
             Method remove = aClass.getMethod("remove", paramTypes);
+            Method containsKey = aClass.getMethod("containsKey", paramTypes);
+            Object[] args;
+            for (String s : fieldsToCleanup) {
+                args = new Object[]{s};
+                if (!(boolean) containsKey.invoke(object,args)) {
+                    throw new IllegalArgumentException("The key doesn't exist");
+                }
+            }
+            for (String s : fieldsToOutput) {
+                args = new Object[]{s};
+                if (!(boolean) containsKey.invoke(object,args)) {
+                    throw new IllegalArgumentException("The key doesn't exist");
+                }
+            }
 
             for (String s : fieldsToCleanup) {
-                Object[] args = new Object[]{s};
+                args = new Object[]{s};
                 remove.invoke(object, args);
             }
             Method get = aClass.getMethod("get", paramTypes);
             for (String s : fieldsToOutput) {
-                Object[] args = new Object[]{s};
+                args = new Object[]{s};
                 System.out.print(" " + get.invoke(object, s));
             }
 
         }
     }
 
-    public static boolean isMap(Object object) {
+    private static boolean isMap(Object object) {
         Class clazzMap = object.getClass();
         Class[] interfaces = clazzMap.getInterfaces();
         for (Class anInterface : interfaces) {
@@ -117,7 +147,8 @@ public class App {
         }
 
         System.out.println(person);
-        App.cleanup(person, fieldsToCleanup, fieldsToOutput);
+        fieldsToCleanup.add("sdf");
+//        App.cleanup(person, fieldsToCleanup, fieldsToOutput);
 
         System.out.println(person);
 
@@ -128,7 +159,9 @@ public class App {
         Set<String> strings = new HashSet<>();
         strings.add("1");
         strings.add("2");
+//        strings.add("3");
         App.cleanup(hashMap, strings, strings);
+        hashMap.containsKey("1");
 
 
     }
